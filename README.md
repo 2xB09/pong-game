@@ -1,2 +1,2 @@
 # simple-game
-Simply pong game in python
+Simple pong game in python 3
