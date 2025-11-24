@@ -1,0 +1,204 @@
+import pygame, random
+
+# Creates screen
+pygame.init()
+screen = pygame.display.set_mode((750, 500))
+clock = pygame.time.Clock()
+
+text_font = pygame.font.SysFont("Arial", 35)
+def draw_text(text, font, text_col, x, y):
+    img = font.render(text, True, text_col)
+    screen.blit(img, (x,y))
+
+game_end = False
+
+width = 750
+height = 500
+
+# Position of players 1 and 2
+x1 = 0
+y1 = 200
+
+x2 = 720
+y2 = 200
+
+# Ball
+ball_speedy = 7
+ball_speedx = 7
+ball_y = 250
+ball_x = 375
+
+# Score tracking
+scored1 = False
+scored2 = False
+
+player1_score = 0
+player2_score = 0
+
+# Used to make sure ball doesn't glitch
+y = 0
+x = 0
+
+# Timer placeholder
+z = 0
+
+
+start = True
+
+
+running = True
+while running:
+    clock.tick(60)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+    
+    # Draws screen
+    if not game_end:
+        screen.fill((0,0,0))
+        pygame.draw.circle(screen,"white", (375, 250), 65)
+        pygame.draw.circle(screen,"black", (375, 250), 60)
+        pygame.draw.line(screen, "white", (375, 0), (375, 500), 5)
+    
+    # Creates start screen
+    if start:
+        ball_speedx = 0
+        ball_speedy = 0
+        draw_text("Controls", text_font, "Blue", 100, 50)
+        draw_text("W - up", text_font, "blue", 100, 90)
+        draw_text("S - down", text_font, "blue", 100, 130)
+        draw_text("Controls", text_font, "Red", 475, 50)
+        draw_text("Arrow up - up", text_font, "Red", 475, 90)
+        draw_text("Arrow down - down", text_font, "Red", 475, 130)
+        draw_text("E to start", text_font, "green", 250, 15)
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_e]:
+            direction_x = random.randint(1, 2)
+            direction_y = random.randint(1, 2)
+            if direction_x == 1:
+                ball_speedx = 7
+            else:
+                ball_speedx = -7
+            if direction_y == 1:
+                ball_speedy = 7
+            else:
+                ball_speedy = -7
+            start = False
+
+
+    # Draws player 1 and 2, along with monitoring movement
+    pygame.draw.rect(screen, "blue", pygame.Rect(x1, y1, 30, 100))
+    player1 = pygame.Rect(x1, y1, 30, 100)
+    edge1 = pygame.Rect(x1-30, y1 - 5, 55, 110)
+
+
+
+    keys1 = pygame.key.get_pressed()
+    if keys1[pygame.K_w] and y1 > 0 and not game_end:
+        y1 -= 4
+    if keys1[pygame.K_s] and y1 < 400 and not game_end:
+        y1 += 4
+    
+
+    pygame.draw.rect(screen, "red", pygame.Rect(x2, y2, 30, 100))
+    player2 = pygame.Rect(x2, y2, 30, 100)
+    edge2 = pygame.Rect(x2 + 5, y2 - 5, 55, 110)
+
+
+    if keys1[pygame.K_UP] and y2 > 0 and not game_end:
+        y2 -= 4
+    if keys1[pygame.K_DOWN] and y2 < 400 and not game_end:
+        y2 += 4
+
+
+    # Draws ball
+    pygame.draw.circle(screen, "green", (ball_x, ball_y), 30)
+    ball = pygame.Rect(ball_x-30, ball_y-30, 60, 60)
+    ball_y += ball_speedy
+    ball_x -= ball_speedx
+
+
+    if ball_y > 50 and ball_y < 450:
+        x = 0
+    if ball_x > 370 and ball_x < 380:
+        y = 0
+
+    # Makes sure ball doesn't leave screen
+    if (ball_y <= 30 and x == 0) or (ball_y >= 470 and x == 0):
+        x = 1
+        ball_speedy = -ball_speedy
+
+    # Creates collisions for the sides of 'players'
+    alt_c1 = pygame.Rect.colliderect(edge1, ball)
+    if alt_c1:
+        x = 0
+        if ball_y < y1 - 20:
+            ball_y -= 4
+            if ball_speedy > 0:
+                ball_speedy = -ball_speedy
+        if ball_y > y1 + 110:
+            ball_y += 4
+            if ball_speedy < 0:
+                ball_speedy = -ball_speedy
+
+    alt_c2 = pygame.Rect.colliderect(edge2, ball)
+    if alt_c2:
+        x = 0
+        if ball_y < y2 - 20:
+            ball_y -= 4
+            if ball_speedy > 0:
+                ball_speedy = -ball_speedy
+        if ball_y > y2 + 110:
+            ball_y += 4
+            if ball_speedy < 0:
+                ball_speedy = -ball_speedy
+
+    # Creates collision for the front of 'players'
+    collide1 = pygame.Rect.colliderect(player1, ball)
+    if (collide1 and ball_x < 60) and (ball_x > 30) and y == 0:
+        y += 1
+        ball_x += 4
+        ball_speedx = -ball_speedx
+    collide2 = pygame.Rect.colliderect(player2, ball)
+    if (collide2 and ball_x > 700) and (ball_x < 720) and y == 0:
+        y += 1
+        ball_x -= 4
+        ball_speedx = -ball_speedx
+
+    # Records who scored, sets up game for next round
+    if ball_x < 0:
+        scored2 = True
+    if ball_x > 750:
+        scored1 = True
+    
+    if scored1 or scored2:
+        draw_text("Score: " + str(player1_score), text_font, "blue", 100, 50)
+        draw_text("Score: " + str(player2_score), text_font, "red", 545, 50)
+        draw_text(str(z), text_font, "green", 340, 25)
+        ball_x = 375
+        ball_y = 250
+        ball_speedy = 0
+        ball_speedx = 0
+        z += 1
+    
+    if z == 1:
+        if scored1:
+            player1_score += 1
+        else:
+            player2_score += 1
+    
+    if z == 100:
+        direction_y = random.randint(1, 2)
+        if direction_y == 1:
+            ball_speedy = -7
+        else:
+            ball_speedy = 7
+        if scored1:
+            ball_speedx = 7
+            scored1 = False
+        else:
+            ball_speedx = -7
+            scored2 = False
+        z = 0
+
+    pygame.display.update()
