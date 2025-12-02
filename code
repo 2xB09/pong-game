@@ -1,4 +1,5 @@
-import pygame, random
+import pygame, random, json
+
 
 # Creates screen
 pygame.init()
@@ -35,16 +36,19 @@ scored2 = False
 player1_score = 0
 player2_score = 0
 
-# Used to make sure ball doesn't glitch
-y = 0
-x = 0
+# Ghost flags to prevent repeated/glitched collisions
+paddle_collision_locked = 0
+vertical_collision_locked = 0
 
-# Timer placeholder
-z = 0
+# Respawn timer placeholder
+respawn_timer = 0
 
+choose_difficulty = True
+# Default difficulty (medium)
+paddle_height = 100
+paddle_speed = 4
 
 start = True
-
 
 running = True
 while running:
@@ -52,16 +56,36 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    
-    # Draws screen
-    if not game_end:
-        screen.fill((0,0,0))
+
+    # Draw game background only when not choosing difficulty
+    screen.fill((0,0,0))
+    if not choose_difficulty and not game_end:
         pygame.draw.circle(screen,"white", (375, 250), 65)
         pygame.draw.circle(screen,"black", (375, 250), 60)
         pygame.draw.line(screen, "white", (375, 0), (375, 500), 5)
-    
-    # Creates start screen
-    if start:
+
+    # Difficulty selection screen (1=easy, 2=medium, 3=hard)
+    if choose_difficulty:
+        draw_text("Choose difficulty:", text_font, "white", 200, 50)
+        draw_text("1 - Easy (longer paddles, slower)", text_font, "green", 50, 120)
+        draw_text("2 - Medium (default)", text_font, "yellow", 50, 180)
+        draw_text("3 - Hard (shorter paddles, faster)", text_font, "red", 50, 240)
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_1]:
+            paddle_height = 140
+            paddle_speed = 3
+            choose_difficulty = False
+        if keys[pygame.K_2]:
+            paddle_height = 100
+            paddle_speed = 4
+            choose_difficulty = False
+        if keys[pygame.K_3]:
+            paddle_height = 70
+            paddle_speed = 6
+            choose_difficulty = False
+
+    # Creates start screen (appears after difficulty chosen)
+    if not choose_difficulty and start:
         ball_speedx = 0
         ball_speedy = 0
         draw_text("Controls", text_font, "Blue", 100, 50)
@@ -85,120 +109,127 @@ while running:
                 ball_speedy = -7
             start = False
 
+    # Draws player 1 and 2, along with monitoring movement after choosing difficulty
+    if not choose_difficulty:
+        pygame.draw.rect(screen, "blue", pygame.Rect(x1, y1, 30, paddle_height))
+        player1 = pygame.Rect(x1, y1, 30, paddle_height)
+        edge1 = pygame.Rect(x1-30, y1 - 5, 55, paddle_height + 10)
 
-    # Draws player 1 and 2, along with monitoring movement
-    pygame.draw.rect(screen, "blue", pygame.Rect(x1, y1, 30, 100))
-    player1 = pygame.Rect(x1, y1, 30, 100)
-    edge1 = pygame.Rect(x1-30, y1 - 5, 55, 110)
+        keys1 = pygame.key.get_pressed()
+        if keys1[pygame.K_w] and y1 > 0 and not game_end and not start:
+            y1 -= paddle_speed
+        if keys1[pygame.K_s] and y1 < height - paddle_height and not game_end and not start:
+            y1 += paddle_speed
 
+        pygame.draw.rect(screen, "red", pygame.Rect(x2, y2, 30, paddle_height))
+        player2 = pygame.Rect(x2, y2, 30, paddle_height)
+        edge2 = pygame.Rect(x2 + 5, y2 - 5, 55, paddle_height + 10)
 
+        if keys1[pygame.K_UP] and y2 > 0 and not game_end and not start:
+            y2 -= paddle_speed
+        if keys1[pygame.K_DOWN] and y2 < height - paddle_height and not game_end and not start:
+            y2 += paddle_speed
 
-    keys1 = pygame.key.get_pressed()
-    if keys1[pygame.K_w] and y1 > 0 and not game_end:
-        y1 -= 4
-    if keys1[pygame.K_s] and y1 < 400 and not game_end:
-        y1 += 4
-    
+        # Draws ball
+        pygame.draw.circle(screen, "green", (ball_x, ball_y), 15)
+        ball = pygame.Rect(ball_x-15, ball_y-15, 30, 30)
+        # Move ball only during actual gameplay
+        if not start and not choose_difficulty and not game_end:
+            ball_y += ball_speedy
+            ball_x -= ball_speedx
 
-    pygame.draw.rect(screen, "red", pygame.Rect(x2, y2, 30, 100))
-    player2 = pygame.Rect(x2, y2, 30, 100)
-    edge2 = pygame.Rect(x2 + 5, y2 - 5, 55, 110)
+    # Collision and scoring 
+    if not start and not choose_difficulty and not game_end:
+        # Reset ghost flags when ball well within play area
+        if ball_y > 35 and ball_y < 465:
+            vertical_collision_locked = 0
+        if abs(ball_x - 375) < 15:
+            paddle_collision_locked = 0
 
+        # Top/bottom border collision
+        if (ball_y <= 15 and vertical_collision_locked == 0) or (ball_y >= 485 and vertical_collision_locked == 0):
+            vertical_collision_locked = 1
+            ball_speedy = -ball_speedy
 
-    if keys1[pygame.K_UP] and y2 > 0 and not game_end:
-        y2 -= 4
-    if keys1[pygame.K_DOWN] and y2 < 400 and not game_end:
-        y2 += 4
+        # Collisions to adjust vertical bounce near paddle ends
+        alt_c1 = pygame.Rect.colliderect(edge1, ball)
+        if alt_c1:
+            vertical_collision_locked = 0
+            zone_margin = int(paddle_height * 0.1)
+            top_thresh = y1 + zone_margin
+            bottom_thresh = y1 + paddle_height - zone_margin
+            if ball_y < top_thresh:
+                ball_y = y1 - 15
+                if ball_speedy > 0:
+                    ball_speedy = -ball_speedy
+            elif ball_y > bottom_thresh:
+                ball_y = y1 + paddle_height + 15
+                if ball_speedy < 0:
+                    ball_speedy = -ball_speedy
 
+        alt_c2 = pygame.Rect.colliderect(edge2, ball)
+        if alt_c2:
+            vertical_collision_locked = 0
+            # Same logic for player 2 paddle
+            zone_margin = int(paddle_height * 0.1)
+            top_thresh = y2 + zone_margin
+            bottom_thresh = y2 + paddle_height - zone_margin
+            if ball_y < top_thresh:
+                ball_y = y2 - 15
+                if ball_speedy > 0:
+                    ball_speedy = -ball_speedy
+            elif ball_y > bottom_thresh:
+                ball_y = y2 + paddle_height + 15
+                if ball_speedy < 0:
+                    ball_speedy = -ball_speedy
 
-    # Draws ball
-    pygame.draw.circle(screen, "green", (ball_x, ball_y), 30)
-    ball = pygame.Rect(ball_x-30, ball_y-30, 60, 60)
-    ball_y += ball_speedy
-    ball_x -= ball_speedx
+        # Straight paddle collisions (horizontal bounce)
+        collide1 = pygame.Rect.colliderect(player1, ball)
+        if collide1 and paddle_collision_locked == 0:
+            paddle_collision_locked = 1
+            ball_x = x1 + 46
+            ball_speedx = -ball_speedx
 
+        collide2 = pygame.Rect.colliderect(player2, ball)
+        if collide2 and paddle_collision_locked == 0:
+            paddle_collision_locked = 1
+            ball_x = x2 - 16
+            ball_speedx = -ball_speedx
 
-    if ball_y > 50 and ball_y < 450:
-        x = 0
-    if ball_x > 370 and ball_x < 380:
-        y = 0
+        # Records who scored, sets up game for next round
+        if ball_x < 0:
+            scored2 = True
+        if ball_x > width:
+            scored1 = True
 
-    # Makes sure ball doesn't leave screen
-    if (ball_y <= 30 and x == 0) or (ball_y >= 470 and x == 0):
-        x = 1
-        ball_speedy = -ball_speedy
+        if scored1 or scored2:
+            draw_text("Score: " + str(player1_score), text_font, "blue", 100, 50)
+            draw_text("Score: " + str(player2_score), text_font, "red", 545, 50)
+            draw_text(str(respawn_timer), text_font, "green", 340, 25)
+            ball_x = 375
+            ball_y = 250
+            ball_speedy = 0
+            ball_speedx = 0
+            respawn_timer += 1
 
-    # Creates collisions for the sides of 'players'
-    alt_c1 = pygame.Rect.colliderect(edge1, ball)
-    if alt_c1:
-        x = 0
-        if ball_y < y1 - 20:
-            ball_y -= 4
-            if ball_speedy > 0:
-                ball_speedy = -ball_speedy
-        if ball_y > y1 + 110:
-            ball_y += 4
-            if ball_speedy < 0:
-                ball_speedy = -ball_speedy
+        if respawn_timer == 1:
+            if scored1:
+                player1_score += 1
+            else:
+                player2_score += 1
 
-    alt_c2 = pygame.Rect.colliderect(edge2, ball)
-    if alt_c2:
-        x = 0
-        if ball_y < y2 - 20:
-            ball_y -= 4
-            if ball_speedy > 0:
-                ball_speedy = -ball_speedy
-        if ball_y > y2 + 110:
-            ball_y += 4
-            if ball_speedy < 0:
-                ball_speedy = -ball_speedy
-
-    # Creates collision for the front of 'players'
-    collide1 = pygame.Rect.colliderect(player1, ball)
-    if (collide1 and ball_x < 60) and (ball_x > 30) and y == 0:
-        y += 1
-        ball_x += 4
-        ball_speedx = -ball_speedx
-    collide2 = pygame.Rect.colliderect(player2, ball)
-    if (collide2 and ball_x > 700) and (ball_x < 720) and y == 0:
-        y += 1
-        ball_x -= 4
-        ball_speedx = -ball_speedx
-
-    # Records who scored, sets up game for next round
-    if ball_x < 0:
-        scored2 = True
-    if ball_x > 750:
-        scored1 = True
-    
-    if scored1 or scored2:
-        draw_text("Score: " + str(player1_score), text_font, "blue", 100, 50)
-        draw_text("Score: " + str(player2_score), text_font, "red", 545, 50)
-        draw_text(str(z), text_font, "green", 340, 25)
-        ball_x = 375
-        ball_y = 250
-        ball_speedy = 0
-        ball_speedx = 0
-        z += 1
-    
-    if z == 1:
-        if scored1:
-            player1_score += 1
-        else:
-            player2_score += 1
-    
-    if z == 100:
-        direction_y = random.randint(1, 2)
-        if direction_y == 1:
-            ball_speedy = -7
-        else:
-            ball_speedy = 7
-        if scored1:
-            ball_speedx = 7
-            scored1 = False
-        else:
-            ball_speedx = -7
-            scored2 = False
-        z = 0
+        if respawn_timer == 100:
+            direction_y = random.randint(1, 2)
+            if direction_y == 1:
+                ball_speedy = -7
+            else:
+                ball_speedy = 7
+            if scored1:
+                ball_speedx = 7
+                scored1 = False
+            else:
+                ball_speedx = -7
+                scored2 = False
+            respawn_timer = 0
 
     pygame.display.update()
