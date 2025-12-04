@@ -6,7 +6,7 @@ pygame.init()
 screen = pygame.display.set_mode((750, 500))
 clock = pygame.time.Clock()
 
-text_font = pygame.font.SysFont("Arial", 35)
+text_font = pygame.font.SysFont("segoeuisymbol", 35)
 def draw_text(text, font, text_col, x, y):
     img = font.render(text, True, text_col)
     screen.blit(img, (x,y))
@@ -53,6 +53,15 @@ start = True
 
 choose_save = True
 
+x = 1
+
+y = 0
+
+z = 1
+
+f = 0
+
+filename = ''
 
 running = True
 while running:
@@ -60,6 +69,24 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if choose_save:
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_1] or keys[pygame.K_2]:
+                x = 0
+                y = 1
+            if y:
+                if event.type == pygame.KEYDOWN:
+                    if keys[pygame.K_BACKSPACE]:
+                        filename = filename[:-1]
+                    elif keys[pygame.K_RETURN]:
+                        choose_save = False
+                        f = 1
+                        choose_difficulty = True
+                    else:
+                        filename += event.unicode
+                    if z:
+                        filename = ''
+                        z = 0
 
     # Draw game background only when not choosing save/difficulty and not game end
     screen.fill((0,0,0))
@@ -70,29 +97,23 @@ while running:
 
 
     if choose_save:
-        draw_text("1. New Save", text_font, "white", 300, 150)
-        draw_text("2. Load Save", text_font, "white", 300, 220)
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_1]:
-            filename = input("Enter new save filename: ")
+        if x == 1:
+            draw_text("1. New Save", text_font, "white", 300, 150)
+            draw_text("2. Load Save", text_font, "white", 300, 220)
+        if y:
+            draw_text("Enter save name here:", text_font, 'white', 225, 150)
+            draw_text(filename, text_font, 'white', 225, 200)
+
+    if f:
+        try:
+            with open(filename + ".json", "r") as f:
+                data = json.load(f)
+                player1_score = data.get("player1_score", 0)
+                player2_score = data.get("player2_score", 0)
+        except FileNotFoundError:
             with open(filename + ".json", "w") as f:
                 json.dump({"player1_score": 0, "player2_score": 0}, f)
-            # move to difficulty selection after making a save
-            choose_save = False
-            choose_difficulty = True
-        elif keys[pygame.K_2]:
-            filename = input("Enter save filename to load: ")
-            try:
-                with open(filename + ".json", "r") as f:
-                    data = json.load(f)
-                    player1_score = data.get("player1_score", 0)
-                    player2_score = data.get("player2_score", 0)
-            except FileNotFoundError:
-                with open(filename + ".json", "w") as f:
-                    json.dump({"player1_score": 0, "player2_score": 0}, f)
-            # move to difficulty selection after loading (or creating missing file)
-            choose_save = False
-            choose_difficulty = True
+        f = 0
 
     # Difficulty selection screen (1=easy, 2=medium, 3=hard)
     if choose_difficulty and not choose_save:
@@ -115,7 +136,7 @@ while running:
             choose_difficulty = False
 
     # Creates start screen (appears after difficulty chosen)
-    if not choose_difficulty and not choose_save and start:
+    if not choose_difficulty and not choose_save and start and not game_end:
         ball_speedx = 0
         ball_speedy = 0
         draw_text("Controls", text_font, "Blue", 100, 50)
@@ -140,7 +161,10 @@ while running:
             start = False
 
     # Draws player 1 and 2, along with monitoring movement after choosing difficulty
-    if not choose_difficulty and not choose_save:
+    if not choose_difficulty and not choose_save and not game_end:
+        if not start:
+            draw_text("Score: " + str(player1_score), text_font, "blue", 100, 50)
+            draw_text("Score: " + str(player2_score), text_font, "red", 545, 50)
         pygame.draw.rect(screen, "blue", pygame.Rect(x1, y1, 30, paddle_height))
         player1 = pygame.Rect(x1, y1, 30, paddle_height)
         edge1 = pygame.Rect(x1-30, y1 - 5, 55, paddle_height + 10)
@@ -233,8 +257,6 @@ while running:
             scored1 = True
 
         if scored1 or scored2:
-            draw_text("Score: " + str(player1_score), text_font, "blue", 100, 50)
-            draw_text("Score: " + str(player2_score), text_font, "red", 545, 50)
             draw_text(str(respawn_timer), text_font, "green", 340, 25)
             ball_x = 375
             ball_y = 250
