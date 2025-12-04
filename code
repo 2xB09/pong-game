@@ -269,6 +269,9 @@ while running:
                 player1_score += 1
             else:
                 player2_score += 1
+            with open(filename + ".json", "w") as f:
+                json.dump({"player1_score": player1_score, "player2_score": player2_score}, f)
+
 
         if respawn_timer == 100:
             direction_y = random.randint(1, 2)
