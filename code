@@ -53,13 +53,10 @@ start = True
 
 choose_save = True
 
-x = 1
-
-y = 0
-
-z = 1
-
-f = 0
+show_save_menu = True           
+typing_filename = False         
+filename_needs_clear = True     
+process_save = False            
 
 filename = ''
 
@@ -72,21 +69,21 @@ while running:
         if choose_save:
             keys = pygame.key.get_pressed()
             if keys[pygame.K_1] or keys[pygame.K_2]:
-                x = 0
-                y = 1
-            if y:
+                show_save_menu = False
+                typing_filename = True
+            if typing_filename:
                 if event.type == pygame.KEYDOWN:
                     if keys[pygame.K_BACKSPACE]:
                         filename = filename[:-1]
                     elif keys[pygame.K_RETURN]:
                         choose_save = False
-                        f = 1
+                        process_save = True
                         choose_difficulty = True
                     else:
                         filename += event.unicode
-                    if z:
+                    if filename_needs_clear:
                         filename = ''
-                        z = 0
+                        filename_needs_clear = False
 
     # Draw game background only when not choosing save/difficulty and not game end
     screen.fill((0,0,0))
@@ -97,14 +94,14 @@ while running:
 
 
     if choose_save:
-        if x == 1:
+        if show_save_menu:
             draw_text("1. New Save", text_font, "white", 300, 150)
             draw_text("2. Load Save", text_font, "white", 300, 220)
-        if y:
+        if typing_filename:
             draw_text("Enter save name here:", text_font, 'white', 225, 150)
             draw_text(filename, text_font, 'white', 225, 200)
 
-    if f:
+    if process_save:
         try:
             with open(filename + ".json", "r") as f:
                 data = json.load(f)
@@ -113,7 +110,7 @@ while running:
         except FileNotFoundError:
             with open(filename + ".json", "w") as f:
                 json.dump({"player1_score": 0, "player2_score": 0}, f)
-        f = 0
+        process_save = False
 
     # Difficulty selection screen (1=easy, 2=medium, 3=hard)
     if choose_difficulty and not choose_save:
