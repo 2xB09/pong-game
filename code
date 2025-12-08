@@ -24,7 +24,6 @@ x2 = 720
 y2 = 200
 
 # Ball
-default_ball_speedx = None
 ball_speedy = 7
 ball_speedx = 7
 ball_y = 250
@@ -123,17 +122,14 @@ while running:
         draw_text("3 - Hard (shorter paddles, faster)", text_font, "red", 50, 240)
         keys = pygame.key.get_pressed()
         if keys[pygame.K_1]:
-            default_ball_speedx = 7
             paddle_height = 140
             paddle_speed = 3
             choose_difficulty = False
         if keys[pygame.K_2]:
-            default_ball_speedx = 7
             paddle_height = 100
             paddle_speed = 4
             choose_difficulty = False
         if keys[pygame.K_3]:
-            default_ball_speedx = 10
             paddle_height = 70
             paddle_speed = 6
             choose_difficulty = False
@@ -154,13 +150,13 @@ while running:
             direction_x = random.randint(1, 2)
             direction_y = random.randint(1, 2)
             if direction_x == 1:
-                ball_speedx = default_ball_speedx
+                ball_speedx = 7
             else:
-                ball_speedx = -default_ball_speedx
+                ball_speedx = -7
             if direction_y == 1:
-                ball_speedy = default_ball_speedx
+                ball_speedy = 7
             else:
-                ball_speedy = -default_ball_speedx
+                ball_speedy = -7
             start = False
 
     # Draws player 1 and 2, along with monitoring movement after choosing difficulty
