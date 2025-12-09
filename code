@@ -28,6 +28,7 @@ ball_speedy = 7
 ball_speedx = 7
 ball_y = 250
 ball_x = 375
+ball_size = None
 
 # Score tracking
 scored1 = False
@@ -49,14 +50,25 @@ choose_difficulty = False
 paddle_height = 100
 paddle_speed = 4
 
-start = True
+start = False
 
 choose_save = True
 
 show_save_menu = True           
 typing_filename = False         
 filename_needs_clear = True     
-process_save = False            
+process_save = False
+
+
+settings_menu = False
+choose_bsize = False
+choose_plength = False
+choose_pthickness = False
+choose_tcountdown = False
+
+collision_and_scoring = False
+draw_players = False
+draw_board = False
 
 filename = ''
 
@@ -71,6 +83,10 @@ while running:
             if keys[pygame.K_1] or keys[pygame.K_2]:
                 show_save_menu = False
                 typing_filename = True
+            if keys[pygame.K_3]:
+                choose_save = False
+                show_save_menu = False
+                settings_menu = True
             if typing_filename:
                 if event.type == pygame.KEYDOWN:
                     if keys[pygame.K_BACKSPACE]:
@@ -86,19 +102,34 @@ while running:
                     if filename_needs_clear:
                         filename = ''
                         filename_needs_clear = False
+        if settings_menu:
+            keys = pygame.key.get_pressed()
+            if event.type == pygame.KEYDOWN:
+                if keys[pygame.K_1]:
+                    settings_menu = False
+                    choose_bsize = True
+                if keys[pygame.K_2]:
+                    settings_menu = False
+                    choose_plength = True
+                if choose_plength or choose_bsize:
+                    if keys[pygame.K_RETURN]:
+                        settings_menu = True
+                        choose_plength = False
+                        choose_bsize = False
 
     # Draw game background only when not choosing save/difficulty and not game end
     screen.fill((0,0,0))
-    if not choose_difficulty and not choose_save and not game_end:
+    if draw_board:
         pygame.draw.circle(screen,"white", (375, 250), 65)
         pygame.draw.circle(screen,"black", (375, 250), 60)
         pygame.draw.line(screen, "white", (375, 0), (375, 500), 5)
 
 
-    if choose_save:
+    if choose_save and not settings_menu:
         if show_save_menu:
             draw_text("1. New Save", text_font, "white", 300, 150)
             draw_text("2. Load Save", text_font, "white", 300, 220)
+            draw_text("3. Settings", text_font, 'white', 300, 290)
         if typing_filename:
             draw_text("Enter save name here:", text_font, 'white', 225, 150)
             draw_text(filename, text_font, 'white', 225, 200)
@@ -113,9 +144,24 @@ while running:
             with open(filename + ".json", "w") as f:
                 json.dump({"player1_score": 0, "player2_score": 0}, f)
         process_save = False
+        choose_difficulty = True
+
+
+    if settings_menu:
+        draw_text("1. Ball Size", text_font, 'white', 150, 100)
+        draw_text("2. Paddle Length", text_font, 'white', 150, 150)
+        draw_text("3. Paddle Thickness", text_font, 'white', 150, 200)
+        draw_text("4. Timer Countdown", text_font, 'white', 150, 250)
+    
+    if choose_bsize:
+        draw_text("Enter ball size: ", text_font, 'white', 150, 100)
+    
+    if choose_plength:
+        draw_text("Enter paddle length: ", text_font, 'white', 150, 100)
+
 
     # Difficulty selection screen (1=easy, 2=medium, 3=hard)
-    if choose_difficulty and not choose_save:
+    if choose_difficulty:
         draw_text("Choose difficulty:", text_font, "white", 200, 50)
         draw_text("1 - Easy (longer paddles, slower)", text_font, "green", 50, 120)
         draw_text("2 - Medium (default)", text_font, "yellow", 50, 180)
@@ -125,17 +171,23 @@ while running:
             paddle_height = 140
             paddle_speed = 3
             choose_difficulty = False
+            draw_board = True
+            start = True
         if keys[pygame.K_2]:
             paddle_height = 100
             paddle_speed = 4
             choose_difficulty = False
+            draw_board = True
+            start = True
         if keys[pygame.K_3]:
             paddle_height = 70
             paddle_speed = 6
             choose_difficulty = False
+            draw_board = True
+            start = True
 
     # Creates start screen (appears after difficulty chosen)
-    if not choose_difficulty and not choose_save and start and not game_end:
+    if start:
         ball_speedx = 0
         ball_speedy = 0
         draw_text("Controls", text_font, "Blue", 100, 50)
@@ -158,9 +210,10 @@ while running:
             else:
                 ball_speedy = -7
             start = False
+            draw_players = True
 
     # Draws player 1 and 2, along with monitoring movement after choosing difficulty
-    if not choose_difficulty and not choose_save and not game_end:
+    if draw_players:
         if not start:
             draw_text("Score: " + str(player1_score), text_font, "blue", 100, 50)
             draw_text("Score: " + str(player2_score), text_font, "red", 545, 50)
@@ -184,15 +237,17 @@ while running:
             y2 += paddle_speed
 
         # Draws ball
-        pygame.draw.circle(screen, "green", (ball_x, ball_y), 15)
-        ball = pygame.Rect(ball_x-15, ball_y-15, 30, 30)
+        pygame.draw.circle(screen, "green", (ball_x, ball_y), 10)
+        ball = pygame.Rect(ball_x-10, ball_y-10, 20, 20)
         # Move ball only during actual gameplay
         if not start and not choose_difficulty and not game_end:
             ball_y += ball_speedy
             ball_x -= ball_speedx
+        
+        collision_and_scoring = True
 
     # Collision and scoring 
-    if not start and not choose_difficulty and not choose_save and not game_end:
+    if collision_and_scoring and not game_end:
         # Reset ghost flags when ball well within play area
         if ball_y > 35 and ball_y < 465:
             vertical_collision_locked = 0
@@ -256,6 +311,7 @@ while running:
             scored1 = True
 
         if scored1 or scored2:
+            game_end = True
             draw_text(str(respawn_timer), text_font, "green", 340, 25)
             ball_x = 375
             ball_y = 250
@@ -285,5 +341,6 @@ while running:
                 ball_speedx = -7
                 scored2 = False
             respawn_timer = 0
+            game_end = False
 
     pygame.display.update()
