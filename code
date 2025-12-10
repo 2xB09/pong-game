@@ -87,6 +87,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         if choose_save:
+            out_settings_menu = False
             keys = pygame.key.get_pressed()
             if keys[pygame.K_1] or keys[pygame.K_2]:
                 show_save_menu = False
@@ -133,6 +134,7 @@ while running:
                     settings_menu = False
                     choose_save = True
                     show_save_menu = True
+                    out_settings_menu = False
             out_settings_menu = True
         if choose_plength or choose_bsize or choose_pspeed or choose_tcountdown or choose_bspeed:
                 keys = pygame.key.get_pressed()
