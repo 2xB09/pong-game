@@ -126,6 +126,10 @@ while running:
                 if keys[pygame.K_4]:
                     settings_menu = False
                     choose_tcountdown = True
+                if keys[pygame.K_5]:
+                    settings_menu = False
+                    choose_save = True
+                    show_save_menu = True
             out_settings_menu = True
         if choose_plength or choose_bsize or choose_pthickness or choose_tcountdown:
                 keys = pygame.key.get_pressed()
@@ -134,8 +138,12 @@ while running:
                         data = data[:-1]
                     else:
                         char = event.unicode
-                        if char.isalpha() or char.isdigit() or char == '.':
-                            data += event.unicode
+                        if char.isdigit() or char == '.':
+                            if '.' not in data:
+                                data += event.unicode
+                            else:
+                                if char != '.':
+                                    data += event.unicode
                     if data_needs_clear:
                         data = ''
                         data_needs_clear = False
@@ -146,6 +154,7 @@ while running:
                         choose_bsize = False
                         choose_pthickness = False
                         choose_tcountdown = False
+                        data_needs_clear = True
 
     # Draw game background only when not choosing save/difficulty and not game end
     screen.fill((0,0,0))
@@ -182,21 +191,23 @@ while running:
         draw_text("2. Paddle Length", text_font, 'white', 150, 150)
         draw_text("3. Paddle Thickness", text_font, 'white', 150, 200)
         draw_text("4. Timer Countdown", text_font, 'white', 150, 250)
+        draw_text("5. Back", text_font, 'white', 150, 300)
+
     
     if choose_bsize:
-        draw_text("Enter ball size (default=10): ", text_font, 'white', 150, 100)
+        draw_text("Enter ball size (default=10): ", text_font, 'white', 125, 100)
         draw_text(data, text_font, 'white', 150, 150)
     
     if choose_plength:
-        draw_text("Enter paddle length (default=100): ", text_font, 'white', 150, 100)
+        draw_text("Enter paddle length (default=100): ", text_font, 'white', 100, 100)
         draw_text(data, text_font, 'white', 150, 150)
 
     if choose_pthickness:
-        draw_text("Enter paddle thickness (default=100): ", text_font, 'white', 150, 100)
+        draw_text("Enter paddle thickness (default=100): ", text_font, 'white', 100, 100)
         draw_text(data, text_font, 'white', 150, 150)
     
     if choose_tcountdown:
-        draw_text("Enter respawn countdown (default=100): ", text_font, 'white', 150, 100)
+        draw_text("Enter respawn countdown (default=100): ", text_font, 'white', 75, 100)
         draw_text(data, text_font, 'white', 150, 150)
 
     # Difficulty selection screen (1=easy, 2=medium, 3=hard)
@@ -264,18 +275,18 @@ while running:
         edge1 = pygame.Rect(x1-30, y1 - 5, 55, paddle_height + 10)
 
         keys1 = pygame.key.get_pressed()
-        if keys1[pygame.K_w] and y1 > 0 and not game_end:
+        if keys1[pygame.K_w] and y1 > 0:
             y1 -= paddle_speed
-        if keys1[pygame.K_s] and y1 < height - paddle_height and not game_end:
+        if keys1[pygame.K_s] and y1 < height - paddle_height:
             y1 += paddle_speed
 
         pygame.draw.rect(screen, "red", pygame.Rect(x2, y2, 30, paddle_height))
         player2 = pygame.Rect(x2, y2, 30, paddle_height)
         edge2 = pygame.Rect(x2 + 5, y2 - 5, 55, paddle_height + 10)
 
-        if keys1[pygame.K_UP] and y2 > 0 and not game_end:
+        if keys1[pygame.K_UP] and y2 > 0:
             y2 -= paddle_speed
-        if keys1[pygame.K_DOWN] and y2 < height - paddle_height and not game_end:
+        if keys1[pygame.K_DOWN] and y2 < height - paddle_height:
             y2 += paddle_speed
 
         # Draws ball
@@ -288,7 +299,7 @@ while running:
         
 
     # Collision and scoring 
-    if collision_and_scoring and not game_end:
+    if collision_and_scoring:
         # Reset ghost flags when ball well within play area
         if ball_y > 35 and ball_y < 465:
             vertical_collision_locked = 0
