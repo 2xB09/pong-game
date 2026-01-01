@@ -1,62 +1,71 @@
-import pygame, random, json
+"""
+Pong Game
+A two-player Pong game with customizable settings and score saving.
+Player 1 uses W/S keys, Player 2 uses arrow keys.
+"""
 
+import pygame
+import random
+import json
 
-# Creates screen
+# Initialize Pygame and create game window
 pygame.init()
 screen = pygame.display.set_mode((750, 500))
 clock = pygame.time.Clock()
 
+# Create font for text display
 text_font = pygame.font.SysFont("segoeuisymbol", 35)
+
 def draw_text(text, font, text_col, x, y):
+    """Display text on the screen at a specific position."""
     img = font.render(text, True, text_col)
-    screen.blit(img, (x,y))
+    screen.blit(img, (x, y))
 
+# Game constants
 game_end = False
+WIDTH = 750
+HEIGHT = 500
 
-width = 750
-height = 500
-
-# Position of players 1 and 2
+# Player 1 (blue) position - left side
 x1 = 0
 y1 = 200
 
+# Player 2 (red) position - right side
 x2 = 720
 y2 = 200
 
-# Ball
-ball_speedy = 7
-ball_speedx = 7
+# Ball properties
+ball_speedy = 7  # Vertical
+ball_speedx = 7  # Horizontal
 ball_y = 250
 ball_x = 375
 default_ball_speed = 7
+ball_size = 10
+
+# Paddle properties
+paddle_height = 100
+paddle_speed = 4
 
 # Score tracking
+player1_score = 0
+player2_score = 0
 scored1 = False
 scored2 = False
 
-player1_score = 0
-player2_score = 0
-
-# Ghost flags to prevent repeated/glitched collisions
+# Collision locks prevent the ball from colliding multiple times per frame
 paddle_collision_locked = 0
 vertical_collision_locked = 0
 
-# Respawn timer placeholder
+# Respawn timer for between rounds
 respawn_timer = 0
+respawn_timer_max = 100
 
-
-choose_difficulty = False
-# Default difficulty (medium)
-
-start = False
-
+# Menu state flags
 choose_save = True
-
-show_save_menu = True           
-typing_filename = False         
-filename_needs_clear = True     
+show_save_menu = True
+typing_filename = False
+filename_needs_clear = True
 process_save = False
-
 
 settings_menu = False
 out_settings_menu = False
@@ -66,36 +75,44 @@ choose_plength = False
 choose_pspeed = False
 choose_tcountdown = False
 
-ball_size = 10
-paddle_height = 100
-paddle_speed = 4
-respawn_timer_max = 100
-data = ''
-data_needs_clear = True
-
+# Game state flags
+choose_difficulty = False
+start = False
 collision_and_scoring = False
 draw_players = False
 draw_board = False
 
+# Initalize data variables for settings input
+data = ''
+data_needs_clear = True
 filename = ''
 
-
+# Main game loop
 running = True
 while running:
-    clock.tick(60)
+    clock.tick(60) 
+    
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        
+        # Handle save file selection menu
         if choose_save:
             out_settings_menu = False
             keys = pygame.key.get_pressed()
+            
+            # Select new or load save
             if keys[pygame.K_1] or keys[pygame.K_2]:
                 show_save_menu = False
                 typing_filename = True
+            
+            # Go to settings menu
             if keys[pygame.K_3]:
                 choose_save = False
                 show_save_menu = False
                 settings_menu = True
+            
+            # Handle filename input
             if typing_filename:
                 if event.type == pygame.KEYDOWN:
                     if keys[pygame.K_BACKSPACE]:
@@ -105,12 +122,16 @@ while running:
                         process_save = True
                         choose_difficulty = True
                     else:
+                        # Only allow letters and numbers
                         char = event.unicode
                         if char.isalpha() or char.isdigit():
                             filename += event.unicode
+                    
                     if filename_needs_clear:
                         filename = ''
                         filename_needs_clear = False
+        
+        # Handle settings menu
         if settings_menu:
             keys = pygame.key.get_pressed()
             if event.type == pygame.KEYDOWN:
@@ -120,10 +141,6 @@ while running:
                 if keys[pygame.K_2]:
                     settings_menu = False
                     choose_bspeed = True
-                if out_settings_menu:
-                    if keys[pygame.K_3]:
-                        settings_menu = False
-                        choose_plength = True
                 if keys[pygame.K_4]:
                     settings_menu = False
                     choose_pspeed = True
@@ -135,51 +152,64 @@ while running:
                     choose_save = True
                     show_save_menu = True
                     out_settings_menu = False
+                # Paddle length only available after settings menu is open
+                if out_settings_menu and keys[pygame.K_3]:
+                    settings_menu = False
+                    choose_plength = True
             out_settings_menu = True
+        
+        # Handle input for settings
         if choose_plength or choose_bsize or choose_pspeed or choose_tcountdown or choose_bspeed:
-                keys = pygame.key.get_pressed()
-                if event.type == pygame.KEYDOWN:
-                    if keys[pygame.K_BACKSPACE]:
-                        data = data[:-1]
-                    else:
-                        char = event.unicode
-                        if char.isdigit() or char == '.':
-                            if '.' not in data:
+            keys = pygame.key.get_pressed()
+            if event.type == pygame.KEYDOWN:
+                if keys[pygame.K_BACKSPACE]:
+                    data = data[:-1]
+                else:
+                    char = event.unicode
+                    # Allow digits and one decimal point
+                    if char.isdigit() or char == '.':
+                        if '.' not in data:
+                            data += event.unicode
+                        else:
+                            if char != '.':
                                 data += event.unicode
-                            else:
-                                if char != '.':
-                                    data += event.unicode
-                    if data_needs_clear:
-                        data = ''
-                        data_needs_clear = False
-                    if keys[pygame.K_RETURN]:
-                        if choose_plength:
-                            paddle_height = float(data)
-                        elif choose_bspeed:
-                            default_ball_speed = float(data)
-                        elif choose_bsize:
-                            ball_size = float(data)
-                        elif choose_pspeed:
-                            paddle_speed = float(data)
-                        elif choose_tcountdown:
-                            respawn_timer_max = int(data)
-                        out_settings_menu = False
-                        settings_menu = True
-                        choose_plength = False
-                        choose_bsize = False
-                        choose_pspeed = False
-                        choose_bspeed = False
-                        choose_tcountdown = False
-                        data_needs_clear = True
+                
+                if data_needs_clear:
+                    data = ''
+                    data_needs_clear = False
+                
+                # Apply the setting when Enter is pressed
+                if keys[pygame.K_RETURN]:
+                    if choose_plength:
+                        paddle_height = float(data)
+                    elif choose_bspeed:
+                        default_ball_speed = float(data)
+                    elif choose_bsize:
+                        ball_size = float(data)
+                    elif choose_pspeed:
+                        paddle_speed = float(data)
+                    elif choose_tcountdown:
+                        respawn_timer_max = int(data)
+                    
+                    # Return to settings menu
+                    out_settings_menu = False
+                    settings_menu = True
+                    choose_plength = False
+                    choose_bsize = False
+                    choose_pspeed = False
+                    choose_bspeed = False
+                    choose_tcountdown = False
+                    data_needs_clear = True
 
-    # Draw game background only when not choosing save/difficulty and not game end
-    screen.fill((0,0,0))
+    # Clear screen and draw background
+    screen.fill((0, 0, 0))
     if draw_board:
-        pygame.draw.circle(screen,"white", (375, 250), 65)
-        pygame.draw.circle(screen,"black", (375, 250), 60)
+        # Draw center circle and line
+        pygame.draw.circle(screen, "white", (375, 250), 65)
+        pygame.draw.circle(screen, "black", (375, 250), 60)
         pygame.draw.line(screen, "white", (375, 0), (375, 500), 5)
 
-
+    # Display save file menu
     if choose_save and not settings_menu:
         if show_save_menu:
             draw_text("1. New Save", text_font, "white", 275, 150)
@@ -189,6 +219,7 @@ while running:
             draw_text("Enter save name here:", text_font, 'white', 225, 150)
             draw_text(filename, text_font, 'white', 225, 200)
 
+    # Load or create save file
     if process_save:
         if filename == '':
             filename = 'default'
@@ -198,12 +229,13 @@ while running:
                 player1_score = data.get("player1_score", 0)
                 player2_score = data.get("player2_score", 0)
         except FileNotFoundError:
+            # Create new save file if it doesn't exist
             with open(filename + ".json", "w") as f:
                 json.dump({"player1_score": 0, "player2_score": 0}, f)
         process_save = False
         choose_difficulty = True
 
-
+    # Display settings menu options
     if settings_menu:
         draw_text("1. Ball Size", text_font, 'white', 150, 100)
         draw_text("2. Ball Speed", text_font, 'white', 150, 150)
@@ -212,7 +244,7 @@ while running:
         draw_text("5. Timer Countdown", text_font, 'white', 150, 300)
         draw_text("6. Back", text_font, 'white', 150, 350)
 
-    
+    # Display individual setting input screens
     if choose_bsize:
         draw_text("Enter ball size (default=10): ", text_font, 'white', 125, 100)
         draw_text(data, text_font, 'white', 150, 150)
@@ -234,7 +266,7 @@ while running:
         draw_text("Enter respawn countdown (default=100): ", text_font, 'white', 75, 100)
         draw_text(data, text_font, 'white', 150, 150)
 
-    # Difficulty selection screen (1=easy, 2=medium, 3=hard)
+    # Display difficulty selection screen
     if choose_difficulty:
         draw_text("Choose difficulty:", text_font, "white", 200, 50)
         draw_text("1 - Easy (longer paddles, slower)", text_font, "green", 50, 120)
@@ -242,6 +274,7 @@ while running:
         draw_text("3 - Hard (shorter paddles, faster)", text_font, "red", 50, 240)
         draw_text("4 - Custom (settings override)", text_font, 'white', 50, 300)
         keys = pygame.key.get_pressed()
+        
         if keys[pygame.K_1]:
             paddle_height = 140
             paddle_speed = 3
@@ -249,6 +282,7 @@ while running:
             draw_board = True
             start = True
             draw_players = True
+
         if keys[pygame.K_2]:
             paddle_height = 100
             paddle_speed = 4
@@ -256,6 +290,7 @@ while running:
             draw_board = True
             start = True
             draw_players = True
+
         if keys[pygame.K_3]:
             paddle_height = 70
             paddle_speed = 6
@@ -263,13 +298,14 @@ while running:
             draw_board = True
             start = True
             draw_players = True
+
         if keys[pygame.K_4]:
             choose_difficulty = False
             draw_board = True
             start = True
             draw_players = True
 
-    # Creates start screen (appears after difficulty chosen)
+    # Display start screen with controls
     if start:
         ball_speedx = 0
         ball_speedy = 0
@@ -280,87 +316,100 @@ while running:
         draw_text("Arrow up - up", text_font, "Red", 475, 90)
         draw_text("Arrow down - down", text_font, "Red", 425, 130)
         draw_text("E to start", text_font, "green", 250, 15)
+        
         keys = pygame.key.get_pressed()
+
         if keys[pygame.K_e]:
+            # Randomize ball direction
             direction_x = random.randint(1, 2)
             direction_y = random.randint(1, 2)
+
             if direction_x == 1:
                 ball_speedx = default_ball_speed
             else:
                 ball_speedx = -default_ball_speed
+
             if direction_y == 1:
                 ball_speedy = default_ball_speed
             else:
                 ball_speedy = -default_ball_speed
+
             start = False
             collision_and_scoring = True
 
-    # Draws player 1 and 2, along with monitoring movement after choosing difficulty
+    # Draw paddles and ball during gameplay
     if draw_players:
         if collision_and_scoring:
             draw_text("Score: " + str(player1_score), text_font, "blue", 100, 50)
             draw_text("Score: " + str(player2_score), text_font, "red", 545, 50)
+        
+        # Draw Player 1 paddle
         pygame.draw.rect(screen, "blue", pygame.Rect(x1, y1, 30, paddle_height))
         player1 = pygame.Rect(x1, y1, 30, paddle_height)
         edge1 = pygame.Rect(x1-30, y1 - 5, 55, paddle_height + 10)
 
+        # Handle Player 1 movement
         keys1 = pygame.key.get_pressed()
         if keys1[pygame.K_w] and y1 > 0:
             y1 -= paddle_speed
-        if keys1[pygame.K_s] and y1 < height - paddle_height:
+        if keys1[pygame.K_s] and y1 < HEIGHT - paddle_height:
             y1 += paddle_speed
 
+        # Draw Player 2 paddle
         pygame.draw.rect(screen, "red", pygame.Rect(x2, y2, 30, paddle_height))
         player2 = pygame.Rect(x2, y2, 30, paddle_height)
         edge2 = pygame.Rect(x2 + 5, y2 - 5, 55, paddle_height + 10)
 
+        # Handle Player 2 movement
         if keys1[pygame.K_UP] and y2 > 0:
             y2 -= paddle_speed
-        if keys1[pygame.K_DOWN] and y2 < height - paddle_height:
+        if keys1[pygame.K_DOWN] and y2 < HEIGHT - paddle_height:
             y2 += paddle_speed
 
-        # Draws ball
+        # Draw ball
         pygame.draw.circle(screen, "green", (ball_x, ball_y), ball_size)
         ball = pygame.Rect(ball_x-ball_size, ball_y-ball_size, ball_size * 2, ball_size * 2)
-        # Move ball only during actual gameplay
+        
+        # Update ball position during active gameplay
         if not start and not choose_difficulty and not game_end:
             ball_y += ball_speedy
             ball_x -= ball_speedx
-        
 
-    # Collision and scoring 
+    # Handle collisions and scoring
     if collision_and_scoring:
-        # Reset ghost flags when ball well within play area
+        # Reset collision locks when ball is in middle of screen
         if ball_y > 40 and ball_y < 460:
             vertical_collision_locked = 0
         if abs(ball_x - 375) < 15:
             paddle_collision_locked = 0
 
-        # Top/bottom border collision
-        if (ball_y <= ball_size and vertical_collision_locked == 0) or (ball_y >= height - ball_size and vertical_collision_locked == 0):
+        # Bounce ball off top and bottom walls
+        if (ball_y <= ball_size and vertical_collision_locked == 0) or (ball_y >= HEIGHT - ball_size and vertical_collision_locked == 0):
             vertical_collision_locked = 1
             ball_speedy = -ball_speedy
 
-        # Collisions to adjust vertical bounce near paddle ends
+        # Check collisions with paddle edges for angled bounces
         alt_c1 = pygame.Rect.colliderect(edge1, ball)
         if alt_c1:
             vertical_collision_locked = 0
             zone_margin = int(paddle_height * 0.1)
             top_thresh = y1 + zone_margin
             bottom_thresh = y1 + paddle_height - zone_margin
+            # Bounce upward if ball hits top of paddle
             if ball_y < top_thresh:
                 ball_y = y1 - 15
                 if ball_speedy > 0:
                     ball_speedy = -ball_speedy
+            # Bounce downward if ball hits bottom of paddle
             elif ball_y > bottom_thresh:
                 ball_y = y1 + paddle_height + 15
                 if ball_speedy < 0:
                     ball_speedy = -ball_speedy
 
+        # Same logic for Player 2 paddle
         alt_c2 = pygame.Rect.colliderect(edge2, ball)
         if alt_c2:
             vertical_collision_locked = 0
-            # Same logic for player 2 paddle
             zone_margin = int(paddle_height * 0.1)
             top_thresh = y2 + zone_margin
             bottom_thresh = y2 + paddle_height - zone_margin
@@ -373,7 +422,7 @@ while running:
                 if ball_speedy < 0:
                     ball_speedy = -ball_speedy
 
-        # Straight paddle collisions (horizontal bounce)
+        # Check straight paddle collisions (horizontal bounce)
         collide1 = pygame.Rect.colliderect(player1, ball)
         if collide1 and paddle_collision_locked == 0:
             paddle_collision_locked = 1
@@ -386,12 +435,13 @@ while running:
             ball_x = x2 - 16
             ball_speedx = -ball_speedx
 
-        # Records who scored, sets up game for next round
+        # Detect when ball goes off screen (point scored)
         if ball_x < 0:
             scored2 = True
-        if ball_x > width:
+        if ball_x > WIDTH:
             scored1 = True
 
+        # Handle end of round
         if scored1 or scored2:
             game_end = True
             draw_text(str(respawn_timer), text_font, "green", 340, 25)
@@ -401,22 +451,26 @@ while running:
             ball_speedx = 0
             respawn_timer += 1
             
+        # Update score after 1 frame delay to ensure clean transition
         if respawn_timer == 1:
             if scored1:
                 player1_score += 1
             else:
                 player2_score += 1
+            # Save score to file
             with open(filename + ".json", "w") as f:
                 json.dump({"player1_score": player1_score, "player2_score": player2_score}, f)
 
-
+        # Reset for next round after countdown finishes
         if respawn_timer == respawn_timer_max:
             game_end = False
+            # Randomize ball direction (vertical)
             direction_y = random.randint(1, 2)
             if direction_y == 1:
                 ball_speedy = -default_ball_speed
             else:
                 ball_speedy = default_ball_speed
+            # Ball goes toward the player who scored
             if scored1:
                 ball_speedx = default_ball_speed
                 scored1 = False
