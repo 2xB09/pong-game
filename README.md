@@ -17,8 +17,11 @@ How to Install and Run the Program:
 How to Use It:
 
 • When the game starts, you will see the save menu. You can choose:
+
 - New Save – create a new score file
+  
 - Load Save – load an existing score file
+  
 - Settings – customize gameplay
 
 • If you choose New Save or Load Save, you will be asked to type a filename. 
@@ -46,7 +49,11 @@ Player 2 (Red): Up Arrow = up, Down Arrow = down
 Press E on the start screen to begin the round.
 
 • Gameplay:
+
 – The ball bounces off walls and paddles.
+
 – If the ball passes a paddle, the other player scores.
+
 – A countdown appears before the next round.
+
 – Scores are saved to a JSON file automatically.
