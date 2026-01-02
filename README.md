@@ -38,8 +38,11 @@ How to Use It:
 – Custom (uses changes made in settings)
 
 • Controls:
+
 Player 1 (Blue): W = up, S = down
+
 Player 2 (Red): Up Arrow = up, Down Arrow = down
+
 Press E on the start screen to begin the round.
 
 • Gameplay:
