@@ -15,6 +15,7 @@ How to Install and Run the Program:
 - Run the game by navigating to the folder and double clicking on the file
 
 How to Use It:
+
 • When the game starts, you will see the save menu. You can choose:
 - New Save – create a new score file
 - Load Save – load an existing score file
