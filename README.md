@@ -28,16 +28,25 @@ How to Use It:
     Scores are saved automatically after each round.
 
 • The Settings Menu allows you to change:
+
 – Ball size
+
 – Ball speed
+
 – Paddle length
+
 – Paddle speed
+
 – Respawn countdown
 
 • After choosing or loading a save, you will select a difficulty:
+
 – Easy
+
 – Medium
+
 – Hard
+
 – Custom (uses changes made in settings)
 
 • Controls:
