@@ -52,7 +52,7 @@ player2_score = 0
 scored1 = False
 scored2 = False
 
-# Collision locks prevent the ball from colliding multiple times per frame
+# Collision locks: prevent the ball from colliding multiple times per frame
 paddle_collision_locked = 0
 vertical_collision_locked = 0
 
@@ -107,7 +107,7 @@ while running:
                 typing_filename = True
             
             # Go to settings menu
-            if keys[pygame.K_3]:
+            if keys[pygame.K_3] and not typing_filename:
                 choose_save = False
                 show_save_menu = False
                 settings_menu = True
@@ -204,7 +204,7 @@ while running:
     # Clear screen and draw background
     screen.fill((0, 0, 0))
     if draw_board:
-        # Draw center circle and line
+        # Draw background
         pygame.draw.circle(screen, "white", (375, 250), 65)
         pygame.draw.circle(screen, "black", (375, 250), 60)
         pygame.draw.line(screen, "white", (375, 0), (375, 500), 5)
@@ -319,6 +319,7 @@ while running:
         
         keys = pygame.key.get_pressed()
 
+        # Close start screen when e is pressed
         if keys[pygame.K_e]:
             # Randomize ball direction
             direction_x = random.randint(1, 2)
