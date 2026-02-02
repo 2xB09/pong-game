@@ -12,7 +12,7 @@ How to Install and Run the Program:
 - Install Pygame by running the following command in a terminal or command prompt:
     pip install pygame
 - Download the game file and place it in any folder.
-- Run the game by navigating to the folder and double clicking on the file
+- Run the game by navigating to the folder and opening the file
 
 How to Use It:
 
